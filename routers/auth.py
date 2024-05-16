@@ -63,7 +63,7 @@ def create_access_token(username: str, user_id: int, expires_delta: timedelta):
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get('sub')
@@ -78,9 +78,9 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_user(db: db_dependency,
+def create_user(db: db_dependency,
                       create_user_request: CreateUserRequest):
-    create_user_model = Users(
+    user_model = Users(
         email=create_user_request.email,
         username=create_user_request.username,
         first_name=create_user_request.first_name,
@@ -89,12 +89,14 @@ async def create_user(db: db_dependency,
         is_active=True
     )
 
-    db.add(create_user_model)
+    db.add(user_model)
     db.commit()
+    return user_model
+
 
 
 @router.post("/token", response_model=Token)
-async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                                  db: db_dependency):
     user = authenticate_user(form_data.username, form_data.password, db)
     if not user:

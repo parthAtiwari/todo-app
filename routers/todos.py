@@ -30,14 +30,14 @@ class TodoRequest(BaseModel):
 
 
 @router.get("/", status_code=status.HTTP_200_OK)
-async def read_all(user: user_dependency, db: db_dependency):
+def read_all(user: user_dependency, db: db_dependency):
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
     return db.query(Todos).filter(Todos.owner_id == user.get('id')).all()
 
 
 @router.get("/todo/{todo_id}", status_code=status.HTTP_200_OK)
-async def read_todo(user: user_dependency, db: db_dependency, todo_id: int = Path(gt=0)):
+def read_todo(user: user_dependency, db: db_dependency, todo_id: int = Path(gt=0)):
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
 
@@ -49,18 +49,26 @@ async def read_todo(user: user_dependency, db: db_dependency, todo_id: int = Pat
 
 
 @router.post("/todo", status_code=status.HTTP_201_CREATED)
-async def create_todo(user: user_dependency, db: db_dependency,
+def create_todo(user: user_dependency, db: db_dependency,
                       todo_request: TodoRequest):
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
-    todo_model = Todos(**todo_request.model_dump(), owner_id=user.get('id'))
+    todo = Todos(**todo_request.model_dump(), owner_id=user.get('id'))
 
-    db.add(todo_model)
+    db.add(todo)
     db.commit()
+   
+    todo_response=todo_request.model_dump()
+    todo_response['id']=todo.id
+    
+    return todo_response
+
+    
+ 
 
 
 @router.put("/todo/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def update_todo(user: user_dependency, db: db_dependency,
+def update_todo(user: user_dependency, db: db_dependency,
                       todo_request: TodoRequest,
                       todo_id: int = Path(gt=0)):
     if user is None:
@@ -80,8 +88,9 @@ async def update_todo(user: user_dependency, db: db_dependency,
     db.commit()
 
 
+
 @router.delete("/todo/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_todo(user: user_dependency, db: db_dependency, todo_id: int = Path(gt=0)):
+def delete_todo(user: user_dependency, db: db_dependency, todo_id: int = Path(gt=0)):
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication Failed')
 
